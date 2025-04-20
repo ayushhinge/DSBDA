@@ -1,0 +1,4 @@
+gedit mapper.py
+gedit reducer.py
+
+cat word.txt | python mapper.py | sort | python reducer.py
