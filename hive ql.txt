@@ -1,0 +1,103 @@
+//create and alter table
+
+hive> use db1;
+
+hive> create table flight (fno int, year int, dest varchar(10), delay float);
+
+hive> alter table flight rename to air_flight;
+
+hive> alter table air_flight add columns (source varchar(10));
+
+hive> alter table air_flight change source src varchar(15);
+
+hive> drop table flight;
+
+hive> desc air_flight;
+
+//create internal table
+
+create table flight (fno int, year int, dest varchar(10), delay float)
+    > row format delimited
+    > fields terminated by ','
+    > lines terminated by '\n'
+    > stored as textfile;
+
+//insert values
+insert into flight values (123, 2009, "Mumbai", 30.);
+
+//insert bulk values
+load data local inpath "flight_input.txt"
+    > overwrite into table flight;
+
+//join tables
+select a.fno, a.year, a.dest, a.delay, b.source
+    > from flight a join nflight b
+    > on (a.fno = b.fno);
+hive> select * from flight;
+
+//indexing
+hive> create index flight_index on table flight(fno)
+    >as 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'
+    > WITH DEFERRED REBUILD;
+
+hive> show tables;
+
+//find average
+> select avg(delay) from flight where year = 2008;
+
+//create external table and insert internal table into external
+
+hive>create external table hive_ext (id int, name varchar(10), sal int)
+row format delimited
+fields terminated by "," 
+lines terminated by ‘\n’
+stored as textfile;
+
+hive>INSERT INTO hive_ext select * from hive_int;
+
+
+
+
+
+
+//hbase external table
+//not tested
+1)sudo su
+2)service hbase-master restart
+3)service hbase-regionserver restart
+
+1)	Create HBASE Table 
+
+
+# create hbase table emphive first
+hbase(main):003:0> create 'emphbase', 'cf'
+
+2)	Create External Table in hive referring to hbase table
+
+#create hive external table
+create external table hive_ext1(id int, name string, esal string)
+STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,cf:name,cf:esal")
+TBLPROPERTIES ("hbase.table.name" = "emphbase");
+
+3)	Create Internal Table  
+
+hive>create table empdbnew(eno int, ename string, esal int) 
+row format delimited 
+fields terminated by ','
+lines terminated by ‘\n’
+ stored as textfile;
+
+#load data in internal/ managed table
+hive>load data local inpath 'data.txt' into table empdbnew;
+
+#Load data in external table from managed table.
+hive>INSERT INTO hive_ext1 select * from empdbnew;
+
+#check contents of hive external  table
+hive> select * from hive_ext1;
+
+#check contents of hbase table
+Hbase> scan ‘emphive’
+
+
